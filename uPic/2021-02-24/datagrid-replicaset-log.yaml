@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: datagrid2-ng
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: datagrid2-ng
+  template:
+    metadata:
+      labels:
+        app: datagrid2-ng
+    spec:
+      imagePullSecrets:
+      - name: mysecret
+      containers:
+      - name: datagrid-ng
+        image: 10.150.203.11:8001/test/migu/datagrid2-ng:0.1.2
+        ports:
+        - containerPort: 7077
+        volumeMounts:
+　    　 - name: logs
+　　       mountPath: /log
+      hostAliases:
+      - ip: 10.150.200.70
+        hostnames:
+        - oes-kafka.miguvideo.com
+      volumes:
+　　   - name: logs
+　　    hostPath:
+　　      path: /home/migu/logs
+　　      type: DirectoryOrCreate

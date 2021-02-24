@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: datagrid2-ng
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: datagrid2-ng
+  template:
+    metadata:
+      labels:
+        app: datagrid2-ng
+    spec:
+      imagePullSecrets:
+      - name: mysecret
+      containers:
+      - name: consul
+        image: harbor.migu:8001/test/migu/consul:1.8
+        ports:
+        - name: http
+          containerPort: 8500
+          protocol: TCP
+        - name: grpc
+          containerPort: 8502
+          protocol: TCP
+        - name: serflan-tcp
+          containerPort: 8301
+          protocol: TCP
+        - name: serflan-udp
+          containerPort: 8301
+          protocol: UDP
+        - name: serfwan-tcp
+          containerPort: 8302
+          protocol: TCP
+        - name: server-tcp
+          containerPort: 8300
+          protocol: TCP
+        - name: dns-tcp
+          containerPort: 8600
+          protocol: TCP
+        - name: dns-udp
+          containerPort: 8600
+          protocol: UDP
+        env:
+        - name: ADVERTISE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NODE
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        command: ['sh', '-c', 'consul agent -retry-join=10.150.201.2 -bind=0.0.0.0 -advertise=$POD_IP -datacenter=dc1 -data-dir=./data -client 0.0.0.0 -ui']
+      - name: datagrid-ng
+        image: harbor.migu:8001/test/migu/datagrid2-ng:0.1.8
+        ports:
+        - containerPort: 7070
+        env: 
+        - name: MY_NODE_IP
+          valueFrom: 
+            fieldRef: 
+              fieldPath: status.hostIP
+        volumeMounts:
+        - name: log-storage
+          mountPath: /log
+      volumes:
+      - name: log-storage
+        hostPath:
+          path: /log
+      hostAliases:
+      - ip: 10.150.200.70
+        hostnames:
+        - oes-kafka.miguvideo.com
